@@ -303,7 +303,9 @@ The following example shows the basic audio data, audio source and global emitte
         {
             "audionodetype": "audiodata",
             "type": "stream",
-            "uri" : "urltotheasset"
+            "value" : [
+              "uri" : "urltotheasset"
+            ]
         },
         {
             "audionodetype": "source",
@@ -311,7 +313,7 @@ The following example shows the basic audio data, audio source and global emitte
             "value" : [
                 "id": 0,
                 "data" : 0,
-                "autoPLaye" : "true"
+                "autoPlay" : "true"
             ]
         },
         {
@@ -390,7 +392,7 @@ The following example shows the basic audio data, audio source and global emitte
 
 ### BYPASS
 
-TODO
+Each processing node can have a `bypass` property. If `bypass` is set to `true`, the node will be excluded from execution.
 
 
 ## 4. Audio source
