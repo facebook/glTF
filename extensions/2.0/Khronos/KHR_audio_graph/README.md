@@ -141,7 +141,9 @@ Each Audio graph object is composed of:
     {
       "audionodetype": "audiodata",
       "type": "stream",
-      "uri" : "urltotheasset"
+      "value" : [
+        "uri" : "urltotheasset"
+      ]
     },
     {
       "audionodetype": "source",
@@ -149,7 +151,7 @@ Each Audio graph object is composed of:
       "value" : [
         "id": 0,
         "data" : 0,
-        "autoPLaye" : "true"
+        "autoPlay" : "true"
       ]
     },
     {
