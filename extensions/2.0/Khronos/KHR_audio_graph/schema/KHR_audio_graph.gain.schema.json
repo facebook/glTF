@@ -4,10 +4,6 @@
     "type": "object",
     "description": "The gain property specifies the amount of amplification to apply, with the actual gain transitioning from its current value to the new one over a specified duration, while the interpolation property determines the curve used for this transition (linear or custom), and the duration property controls the length of time spent interpolating between the old and new gain values.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the gain node in the scene.",
-            "type": "integer"
-        },
         "gain": {
             "type": "number",
             "description": "The gain to apply. In's a linear value in the range [0..1]. Should be nultiplied to previous node (emitter, source) gain. Once set, the actual gain applied will transition from it’s current setting to the new one set over 'duration' milliseconds."
@@ -36,9 +32,6 @@
         "extras": {}
     },
     "required": [
-        "id",
-        "gain",
-        "interpolation",
-        "duration"
+        "gain"
     ]
 }

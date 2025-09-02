@@ -1,21 +1,17 @@
 {
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "KHR_audio_graph Lowshelf Filter Node",
+    "title": "KHR_audio_graph Highshelf Filter Node",
     "type": "object",
     "description": "The highshelf filter is the opposite of the lowshelf filter and allows all frequencies through, but adds a boost to the higher frequencies. It implements a second-order highshelf filter.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the highshelf filter node in the scene.",
-            "type": "integer"
-          },
+        
         "frequency": {
             "type": "number",
             "description": "The lower limit of the frequences where the boost (or attenuation) is applied in Hz."
         },
         "gain": {
             "type": "number",
-            "description": "The boost, in dB, to be applied. If the value is negative, the frequencies are attenuated.",
-            "maximum" : 1541
+            "description": "The boost, in dB, to be applied. If the value is negative, the frequencies are attenuated."
         },
         "bypass": {
             "type": "boolean",
@@ -33,7 +29,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency"
     ]
 }

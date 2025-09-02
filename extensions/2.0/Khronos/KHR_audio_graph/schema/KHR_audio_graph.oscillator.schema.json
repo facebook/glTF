@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "KHR_audio_graph Audio Oscillator",
     "type": "object",
     "description": "This represents an audio source generating a periodic waveform. It can be set to a few commonly used waveforms.",
@@ -29,19 +29,10 @@
             "maximum": 1,
             "default": 0.5
         },
-        "encodingProperties": {
-            "description": "Encoding properties.",
-            "allOf": [
-                {
-                    "$ref": "encoding.KHR_audio_graph.schema.json"
-                }
-            ]
-        },
         "extensions": {},
         "extras": {}
     },
     "required": [
-        "id",
         "type",
         "frequency"
     ]

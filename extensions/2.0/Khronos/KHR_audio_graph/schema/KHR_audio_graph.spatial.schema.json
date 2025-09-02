@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "KHR_audio_graph Spatial Properties",
     "type": "object",
     "description": "This represents an spatial properties .",
@@ -11,13 +11,12 @@
     "properties": {
         "spatializationModel": {
             "type": "string",
-            "description": "Determines which spatialization model will be used to position the audio in 3D space (0 = equal power, 1 = HRTF, 2 = Custom).",
+            "description": "Determines which spatialization model will be used to position the audio in 3D space.",
             "enum": [
                 "equalpower",
                 "HRTF",
                 "custom"
             ]
-
         },
         "attenuation": {
             "type": "object",

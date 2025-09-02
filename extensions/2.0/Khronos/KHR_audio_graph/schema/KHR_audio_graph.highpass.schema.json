@@ -4,10 +4,6 @@
     "type": "object",
     "description": "A highpass filter allows frequencies above the cutoff frequency to pass through and attenuates frequencies below the cutoff. It implements a standard second-order resonant highpass filter with 12dB/octave rolloff.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the highpass filter node in the scene.",
-            "type": "integer"
-          },
         "frequency": {
             "type": "number",
             "description": "The cutoff frequency in Hz."
@@ -34,7 +30,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency",
         "qualityFactor"
     ]

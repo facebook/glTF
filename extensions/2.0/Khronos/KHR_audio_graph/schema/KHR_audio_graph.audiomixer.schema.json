@@ -4,14 +4,9 @@
     "type": "object",
     "description": "Use the Audio mixer node to combine the output from multiple audio sources. Number of channels should be the same across all inputs.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the audio mixer node in the scene.",
-            "type": "integer"
-        },
+        
         "extensions": {},
         "extras": {}
     },
-    "required": [
-        "id"
-    ]
+    "required": []
 }

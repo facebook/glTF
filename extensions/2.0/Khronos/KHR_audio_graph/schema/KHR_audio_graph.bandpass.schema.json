@@ -4,10 +4,6 @@
     "type": "object",
     "description": "A bandpass filter allows a range of frequencies to pass through and attenuates the frequencies below and above this frequency range. It implements a second-order bandpass filter.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the bandpass filter node in the scene.",
-            "type": "integer"
-          },
         "frequency": {
             "type": "number",
             "description": "The cutoff frequency in Hz."
@@ -32,7 +28,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency",
         "qualityFactor"
     ]

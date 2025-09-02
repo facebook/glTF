@@ -4,10 +4,6 @@
     "type": "object",
     "description": "An allpass filter allows all frequencies through, but changes the phase relationship between the various frequencies. It implements a second-order allpass filter.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the notch filter node in the scene.",
-            "type": "integer"
-          },
         "frequency": {
             "type": "number",
             "description": "The frequency where the center of the phase transition occurs. Viewed another way, this is the frequency with maximal group delay."
@@ -32,7 +28,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency",
         "qualityFactor"
     ]

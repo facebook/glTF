@@ -4,10 +4,7 @@
     "type": "object",
     "description": "The peaking filter allows all frequencies through, but adds a boost (or attenuation) to a range of frequencies.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the peaking filter node in the scene.",
-            "type": "integer"
-          },
+        
         "frequency": {
             "type": "number",
             "description": "The center frequency of where the boost is applied."
@@ -36,7 +33,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency",
         "qualityFactor"
     ]

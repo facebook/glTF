@@ -1,97 +1,34 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "KHR_audio_graph Reverb Node",
-    "type": "object",
-    "description": "Reverberation is the persistence of sound in an enclosure after a sound source has been stopped. This is a result of the multiple reflections of sound waves throughout the room arriving at the ear so closely spaced that they are indistinguishable from one another and are heard as a gradual decay of sound.",
-    "properties": {
-        "id": {
-            "description": "A unique identifier of the reverb node in the scene.",
-            "type": "integer"
-        },
-        "mix": {
-            "type": "number",
-            "description": "Blend between the source signal ('dry') and the reverb effect. A value of 0 will not add any reverb. A value of 50 will mix the signal 50% dry and 50% reverberation. A value of 100 will result in only reverberation, without any of the source signal.",
-            "minimum": 0,
-            "maximum": 100
-        },
-        "earlyReflectionsGain": {
-            "type": "number",
-            "description": "Loudness control for the early reflections of the reverberation."
-        },
-        "diffusionGain": {
-            "type": "number",
-            "description": "Loudness control for the reverb decay as it returns to silence."
-        },
-        "roomSize": {
-            "type": "number",
-            "description": "Approximates the size of the room you want to simulate in meters from wall to wall."
-        },
-        "reflectivity": {
-            "type": "number",
-            "description": "Defines how much of the audio is reflected at each bounce on a wall. Value range: 0 to 100. Low values will simulate softer sounding materials like carpet or curtains. High values will simulate harder materials like wood, glass or metal. A value of 100 will result in self-oscillation and is not recommended.",
-            "minimum": 0,
-            "maximum": 100
-        },
-        "reflectivityHigh": {
-            "type": "number",
-            "description": "Separate value for the reflectivity of high frequencies."
-        },
-        "reflectivityLow": {
-            "type": "number",
-            "description": "Separate value for the reflectivity of low frequencies."
-        },
-        "earlyReflections": {
-            "type": "integer",
-            "description": "The number of early reflections of reverberation. The value range is 0 to 32.",
-            "minimum": 0,
-            "maximum": 32
-        },
-        "minDistance": {
-            "type": "number",
-            "description": "The distance from the centerpoint that the reverb will have full effect at."
-        },
-        "maxDistance": {
-            "type": "number",
-            "description": "The distance from the centerpoint that the reverb will not have any effect."
-        },
-        "reflectionDelay": {
-            "type": "number",
-            "description": "Initial reflection delay time in ms."
-        },
-        "reverbDelay": {
-            "type": "number",
-            "description": "Late reverberation delay time relative to initial reflection."
-        },
-        "bypass": {
-            "type": "boolean",
-            "description": "Disables this processor while still allowing unprocessed audio signals to pass."
-        },
-        "channelInterpretation": {
-            "type": "string",
-            "description": "Channel ordering for speaker channel interpretation are captured here. When the number of channels do not match any of the basic speaker layouts, use discrete to  maps channels to outputs. ",
-            "enum": [
-              "speakers",
-              "discrete"
-            ]
-          },
-        "extensions": {},
-        "extras": {}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KHR_audio_graph Reverb Node (IR-based)",
+  "type": "object",
+  "description": "IR-based reverb using convolution. The overall effect is controlled via wet/dry mixing in the graph.",
+  "properties": {
+    "id": {
+      "description": "A unique identifier of the reverb node in the scene.",
+      "type": "integer"
     },
-    "required": [
-        "id",
-        "mix",
-        "earlyReflectionsGain",
-        "diffusionGain",
-        "roomSize",
-        "reflectivity",
-        "reflectivityHigh",
-        "reflectivityLow",
-        "earlyReflections",
-        "minDistance",
-        "maxDistance",
-        "reflectionDelay",
-        "reverbDelay",
-        "customProperties",
-        "bypass"
-    ]
+    "impulse": {
+      "description": "Index of the audio data to use as an impulse response.",
+      "allOf": [ { "$ref": "glTFid.schema.json" } ]
+    },
+    "normalize": {
+      "type": "boolean",
+      "description": "Whether the impulse response should be normalized.",
+      "default": true
+    },
+    "bypass": {
+      "type": "boolean",
+      "description": "Disables this processor while still allowing unprocessed audio signals to pass."
+    },
+    "channelInterpretation": {
+      "type": "string",
+      "description": "Channel ordering for speaker channel interpretation are captured here.",
+      "enum": ["speakers", "discrete"]
+    },
+    "extensions": {},
+    "extras": {}
+  },
+  "required": ["id", "impulse"]
 }
+

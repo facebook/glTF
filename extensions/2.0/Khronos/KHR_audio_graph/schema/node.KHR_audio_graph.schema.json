@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "KHR_audio_graph node extension",
     "type": "object",
     "allOf": [ { "$ref": "glTFProperty.schema.json" } ],

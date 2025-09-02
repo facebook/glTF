@@ -4,10 +4,7 @@
     "type": "object",
     "description": "A lowpass filter allows frequencies below the cutoff frequency to pass through and attenuates frequencies above the cutoff. It implements a standard second-order resonant lowpass filter with 12dB/octave rolloff.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the lowpass filter node in the scene.",
-            "type": "integer"
-          },
+        
         "frequency": {
             "type": "number",
             "description": "The cutoff frequency in Hz."
@@ -34,7 +31,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency",
         "qualityFactor"
     ]

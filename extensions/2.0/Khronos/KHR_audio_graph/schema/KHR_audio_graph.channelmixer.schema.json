@@ -4,10 +4,7 @@
     "type": "object",
     "description": "Up-mixing refers to the process of taking a stream with a smaller number of channels and converting it to a stream with a larger number of channels. Down-mixing refers to the process of taking a stream with a larger number of channels and converting it to a stream with a smaller number of channels. Channel mixer node should ideally use these mixing rules. ",
     "properties": {
-        "id": {
-          "description": "A unique identifier of the channel mixer node in the scene.",
-          "type": "integer"
-        },
+        
         "outputChannels": {
             "type": "integer",
             "description": "Number of channels in output audio."
@@ -24,7 +21,6 @@
         "extras": {}
       },
       "required": [
-        "id",
         "outputChannels"
       ]
 }

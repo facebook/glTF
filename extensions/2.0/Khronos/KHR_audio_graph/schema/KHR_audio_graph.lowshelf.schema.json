@@ -4,10 +4,7 @@
     "type": "object",
     "description": "The lowshelf filter allows all frequencies through, but adds a boost (or attenuation) to the lower frequencies. It implements a second-order lowshelf filter.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the lowshelf filter node in the scene.",
-            "type": "integer"
-          },
+        
         "frequency": {
             "type": "number",
             "description": "The upper limit of the frequences where the boost (or attenuation) is applied in Hz."
@@ -32,7 +29,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency"
     ]
 }

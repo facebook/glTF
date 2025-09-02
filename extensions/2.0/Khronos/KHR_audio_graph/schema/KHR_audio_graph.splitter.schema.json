@@ -4,10 +4,6 @@
   "type": "object",
   "description": "Node for accessing the individual channels of an audio stream in the routing graph. It has a single input, and a number of outputs which equals the number of channels in the input audio stream. For example, if a stereo input is connected to this node then the number of active outputs will be two (one from the left channel and one from the right). ",
   "properties": {
-    "id": {
-      "description": "A unique identifier of the splitter node in the scene.",
-      "type": "integer"
-    },
     "channelInterpretation": {
       "type": "string",
       "description": "Channel ordering for speaker channel interpretation are captured here. When the number of channels do not match any of the basic speaker layouts, use discrete to  maps channels to outputs. ",
@@ -19,7 +15,5 @@
     "extensions": {},
     "extras": {}
   },
-  "required": [
-    "id"
-  ]
+  "required": []
 }

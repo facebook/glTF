@@ -4,10 +4,6 @@
     "type": "object",
     "description": "The notch filter (also known as a band-stop or band-rejection filter) is the opposite of a bandpass filter. It allows all frequencies through, except for a set of frequencies.",
     "properties": {
-        "id": {
-            "description": "A unique identifier of the notch filter node in the scene.",
-            "type": "integer"
-          },
         "frequency": {
             "type": "number",
             "description": "The center frequency of where the boost is applied."
@@ -32,7 +28,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "frequency",
         "qualityFactor"
     ]

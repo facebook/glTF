@@ -43,37 +43,25 @@ One or more intermediate processing nodes such as filters can be placed between 
 
 ## Features
 
-The core specification should support these primary features:
+The core specification supports:
 
-
-
-* Graph based audio routing for simple or complex mixing and processing architectures.
-* Processing of audio data stored in memory buffer or accessed via file paths.
-* Capturing audio metadata such as encoding properties.
-* Audio playback functionalities including playing, stopping, pausing, looping, and controlling playback speed.
-* Spatialized audio supporting a wide range of 3D applications and immersive environments with 6DoF source/listener capabilities, panning models (equal power, HRTF), distance attenuation, and sound cones.
-* Basic audio signal processing to control gain, delay, and pitch.
-* Flexible handling of channels in an audio stream, allowing splitting, merging, up-mixing, or down-mixing.
-* Audio mixing, reverb, and filtering with a set of low-order audio filters.
-* Animation control and dynamic update of node properties.
+- A JSON-based audio graph with nodes, connections, and optional sinks (emitters) for spatialized audio.
+- Audio content from memory (bufferView/uri) or procedural oscillator data.
+- Encoding metadata (bitsPerSample, duration, samples, sampleRate, channels).
+- Playback controls (play, stop, pause, looping, speed) with timing in milliseconds (ms).
+- Spatialized audio via Emitter + glTF node transforms (HRTF/equal-power, distance attenuation, sound cones).
+- Basic processing: gain, delay, filtering, distortion (waveshaping), and IR-based reverb.
+- Channel routing: splitting, merging, up/down-mixing, and summing mixes.
+- Animation and dynamic updates (see KHR_animation_pointer; refined separately).
 
 ### Definitions
 
-The following is a set of definitions to provide context for the ausio graph representation.
-
-* A **Audio Node** is a function that generates or operates upon audio data.
-
-* **Node Input and Output Ports** The interface for a node’s incoming data is declared through **input ports**, which may be audio data, oscillator data or audio channels data . The interface for a node’s outgoing data is declared through **output ports**.
-
-* There is a specific set of supported **Data Types**. Every port must have a data type.
-
-* An **Audio channel data** contains the actual sound bitstream for a single channel
-
-* An **Audio data** contains all channels for actual **Audio channel data**
-
-* A **Node Graph** is a directed acyclic graph (DAG) of nodes, which may be used to define arbitrarily complex generation or processing networks.  Node Graphs describe a network of nodes flowing from source to listener, or define a complex or layered node in terms of simpler nodes. The former is called a **compound nodegraph** and the latter a **functional nodegraph**.
-
-* Node Graph:
+- **Audio Node**: a function that generates or processes audio.
+- **Source Node**: 0 inputs / 1 output; content via `data.oneOf` — audioData reference or oscillator data.
+- **Processor Node**: typically 1 input / 1 output; includes gain, delay, filters, waveshaper, reverb. Splitter is 1→N; Channel Merger is N→1; mixers as declared.
+- **Emitter Node**: 1 input / 0 outputs. Acts as a sink; spatialization derives from Emitter + glTF node transform.
+- **Listener**: scene-level (not a graph node), attached to camera; refined separately.
+- **Audio Graph**: directed acyclic graph (DAG) of nodes with explicit connections by node indices and optional port indices.
   * **Inputs** are nodes that define the interface for a graph’s incoming data.
   * **Outputs** are nodes that define the interface for a graph’s outgoing data.
 
@@ -85,101 +73,51 @@ One or more intermediate processing nodes such as filters can be placed between 
 
 ## Extension Declaration
 
-Usage of the procedural structure is indicated by adding the `KHR_texture_procedurals` extension identifier to the `extensionsUsed` array.
+Add `KHR_audio_graph` to `extensionsUsed` and declare the extension payload under `extensions`.
 
 ```json
 {
-    "extensionsUsed": [
-        "KHR_audio_graph"
-    ]
-}
-```
-
-Usage of a given extension is defined in the `extensions` object as follows:
-```json
-{
-    "extensions": {
-        "KHR_audio_graph": {
-            "audio_nodes": [],
-            "procedurals" : []
-        }
+  "extensionsUsed": ["KHR_audio_graph"],
+  "extensions": {
+    "KHR_audio_graph": {
+      "schemaVersion": "0.1",
+      "audioData": [ /* see Encoding + AudioData */ ],
+      "graphs": [ /* see Graph Schema */ ]
     }
+  }
 }
 ```
 
 
-### Data Types
+### Conventions
 
-The supported data types are:
+- Units: all time values are expressed in milliseconds (ms). Implementations mapping to Web Audio convert ms→s for API calls (e.g., `DelayNode.delayTime`).
+- Connections: edges reference node array indices, with optional `input`/`output` port indices. Omitted indices refer to the default/main port.
+- Sinks: a valid graph must have at least one sink — either an `emitter` node or a node index listed in `outputs[]`.
 
-* single `float`
-* single `integer`
-* single `boolean`
-* single `channel`: Data stream for a single audio channel
-* single `stream`: Data stream for all channel
+### Web Audio Mapping (Informative)
+
+- General units: Unless specified otherwise, times are expressed in milliseconds (ms). When mapping to Web Audio API, timing values are converted to seconds (s), e.g., `delayTime(ms)` → `DelayNode.delayTime(s)`.
+- Source Node (4.1): Maps to `AudioBufferSourceNode`. `playbackSpeed` corresponds to `playbackRate`. `loopStart`/`loopEnd` map to seconds. `when` is seconds and is passed to `start(when, offset, duration)` after ms→s conversion for `offset`/`duration`.
+- Oscillator Data (4.3): Maps to `OscillatorNode`. If `type = square` and `pulseWidth` is provided, a static PWM can be implemented via `PeriodicWave`. Dynamic PWM modulation is out of scope.
+- Gain (6.1): Maps to `GainNode`. Optional smoothing may be expressed with `interpolation: 'linear'|'custom'` and `duration (ms)`. Linear smoothing uses `linearRampToValueAtTime`; ‘custom’ can be approximated with `setTargetAtTime`.
+- Delay (6.2): Maps to `DelayNode` with `delayTime` in seconds (ms→s conversion).
+- Filters (6.8.x): Map to `BiquadFilterNode` with corresponding `type`. `frequency` (Hz ≥ 0), `qualityFactor` maps to `Q` (≥ 0), `gain` (dB). Optional `bypass` may be supported via build‑time routing or runtime dry/wet crossfade.
+- Reverb (6.9): IR‑based reverb maps to `ConvolverNode`. The overall wet/dry is implemented by summing dry and wet paths with respective gains. Algorithmic reverbs are out of scope here and may be future optional nodes.
+- Panning: For simple stereo pan use `StereoPannerNode`; for 3D spatialization use `PannerNode`. In this extension, spatialization is typically realized by an `emitter` + glTF node transform.
+- Emitter (5.1): Implemented as a gain stage with optional spatialization via `PannerNode`. A single scene listener is assumed; listener details remain part of the specification.
+- Pitch Shifter (6.3): Deferred from initial scope; commonly realized via custom DSP/Worklet.
+- Bypass (Implementation Note): For processors, an optional `bypass: boolean` may be honored by either (1) build‑time rewiring (omit node), or (2) runtime dry/wet crossfade. Exact behavior may be implementation‑defined.
+- Channel Interpretation (Implementation Note): Where supported by Web Audio (`AudioNode.channelInterpretation`), an optional `channelInterpretation: 'speakers'|'discrete'` may refine mixing behavior.
 
 
 ### Audio Nodes
 
-TODO:
+Node kinds and parameters are defined by JSON Schemas (see `schema/`). Graphs use a discriminator shape `{ "kind": "<enum>", "params": { ... }, "label?": string }` for each node entry.
 
-We have to declare all node upfront, they will be referenced by the graph
+### KHR_animation_pointer
 
-
-FIXME:: input/output type of the node is actually determined by the node (scheme) itself. Either we need to express input/output type od remove it
-
-
-Each Audio graph object is composed of:
-
-  * An `audionodetype` category which must be one of the follwoing: audiodata, oscillator, source, mixer, TODO
-  * A `type` which is the output type of the audio node. This is a supported data type, or `multioutput` if there is more than one output node for the graph.
-  * A `value` actual JSON object that represents the data for this audio node - See (## 4. Audio source)
-
-```JSON
-{
-  "audio_nodes" [
-    {
-      "audionodetype": "audiodata",
-      "type": "stream",
-      "value" : [
-        "uri" : "urltotheasset"
-      ]
-    },
-    {
-      "audionodetype": "source",
-      "type": "stream",
-      "value" : [
-        "id": 0,
-        "data" : 0,
-        "autoPlay" : "true"
-      ]
-    },
-    {
-      "audionodetype": "emitter",
-      "type": "stream",
-      "value" : [
-        "id": 1,
-        "emitterType" : "global",
-      ]
-    },
-    ],
-}
-```
-
-### KHR_Animation_pointer integration
-
-
-TODO
-
-Shoudl it be a part of nodes declaration of the actual graph?
-
-```JSON
-                    "extensions": {
-                        "KHR_animation_pointer": {
-                            "pointer": "/nodes/0/mixer1"
-                        }
-                    }
-```
+Animation integration remains out of scope for this pass. Refer to `KHR_animation_pointer` for animating node parameters via JSON Pointers. Pointers to graph nodes/params will be refined in a later phase.
 
 ## Listener
 
@@ -188,209 +126,134 @@ TODO:
 Listener node should be attached to the camera
 
 
-### Procedurals Graphs
+### Graphs
 
-One ore more procedurals graphs can be defined in the `proceduras` array.
+Graphs are defined under `graphs[]` using the following JSON structure.
 
-A graph __cannot__ be nested (contain another graph). Any such configurations must be “flattened” to single level graphs.
+Example — global output sink via `outputs[]`
 
-Each procedural graph object is composed of:
-
-  * An optional string `name` identifier
-  * A `nodetype` category which must be `nodegraph`
-  * A `type` which is the output type of the graph. This is a supported data type, or `multioutput` if there is more than one output node for the graph.
-  * Three array children:
-    * `inputs` : lists input "interface" nodes for passing data into the graph.
-    * `outputs` : lists output "interface" nodes for passing data out of the graph. See [Node Graph Connections](#node-graph-connections) for connection information.
-    * `nodes` : processing nodes.
-
-The structure of audio nodes is described in  [Audio Nodes](#procedural-nodes) section.
-
-Note that input and output node types are `input` and `output` respectively.
-
-#### Graph Structure
-
-```JSON
+```json
 {
-  "name": "<optional name>",
-  "nodetype": "nodegraph",
-  "type": "<data-type>",
-  "inputs": [],
-  "outputs": [],
-  "nodes": []
-}
-```
-
-### Graph Nodes
-
-* An atomic function is represented as a single node with the following properties:
-
-    * An optional string `name` identifier
-
-    * `nodetype` : a string identifier for the node type. This is an 'audionode' type or a custom node type.
-
-    * `type` : the output type of the node. This is a supported data type or `multioutput` if there is more than one output for the node.
-
-    * A list of input ports under an `inputs` array.
-    If an `input` is specified it's input value overrides that of the node definition default.
-
-    * A list of output ports under an `outputs` array. Every `output` defined by the node's definition __must__ be specified.
-
-    * Each input port:
-        * Must have a node type: `input`
-        * May have an optional string `name` identifier
-        * Must have a `type` which is a supported data type.
-        * Either:
-          * A `value` which is a constant value for the node. or
-          * A connection specifier. See [Node Graph Connections](#node-graph-connections) for allowed connections.
-
-    * All `output` ports specified by the node's definition must be specified for each node instance. Each output port:
-        * Must have a node type: `output`
-        * Must have a `type` which is a supported data type.
-
-#### Node Structure
-
-```JSON
-{
-  "name": "<node name>",
-  "type": "<data type>",
-  "audionode": <id of audionode>  or
-  "inputs": [],
-  "outputs": []
-}
-```
-
-where an each input port in the `inputs` array  has the following structure:
-
-```JSON
-{
-  "name": "<input name>",
-  "nodetype": "input",
-  "type": "<data type>",
-  "node": <processing node index> or
-  "input": <input node index> or
-  "output": <output node index>
-}
-```
-and each output port in the `outputs` array has the following structure:
-
-```JSON
-{
-  "name": "<input name>",
-  "nodetype": "output",
-  "type": "<data type>",
-}
-```
-
-### Node Graph Connections
-
-Connections inside a graph can be made:
-
-* To a `node input` from a an `nodegraph input` by specifying a `input` value which is an index into the graph's `inputs` array.
-* To a `node input` from a node `output` by specifying a `node` value which is an index into the graph's `nodes` array.
-* To a nodegraph `output` from a node `output` by specifying a `node` value which is an index into the graph's `nodes` array.
-
-If the upstream node has multiple outputs, then an `output` value which is an index into the the upstream nodes `outputs` array  __must__ additionally be specified.
-
-
-The following example shows the basic audio data, audio source and global emitter nodes
-
-
-<details>
-<summary>Example</summary>
-
-```JSON
-{
-    "audio_nodes" [
-        {
-            "audionodetype": "audiodata",
-            "type": "stream",
-            "value" : [
-              "uri" : "urltotheasset"
-            ]
-        },
-        {
-            "audionodetype": "source",
-            "type": "stream",
-            "value" : [
-                "id": 0,
-                "data" : 0,
-                "autoPlay" : "true"
-            ]
-        },
-        {
-            "audionodetype": "emitter",
-            "type": "stream",
-            "value" : [
-                "id": 1,
-                "emitterType" : "global",
-            ]
-        },
-    ],
-  "procedurals" [
+  "name": "simple",
+  "nodes": [
     {
-      "name": "nodegraph1",
-      "nodetype": "nodegraph",
-      "type": "stream",
-      "inputs": [
-      ],
-      "nodes" [
-          {
-            "name": "audiosource1",
-            "nodetype": "audionode",
-            "type": "stream",
-            "audionode" : 0,
-            "inputs": [
-              {
-                "name": "audiodata1",
-                "nodetype": "audiodata",
-                "type": "stream",
-                "audiodata": 0
-              }]              ,
-            "outputs": [
-              {
-                "name": "out",
-                "nodetype": "output",
-                "type": "stream"
-              }
-            ]
-          },
-          {
-            "name": "emitter1",
-            "nodetype": "audionode",
-            "audionode" : 1,
-            "type": "stream",
-            "inputs": [
-              {
-                "name": "in2",
-                "nodetype": "input",
-                "type": "stream",
-                "node": 0,
-                "output": 0
-              }
-            ],
-            "outputs": [
-              {
-                "name": "out",
-                "nodetype": "output",
-                "type": "stream"
-              }
-            ]
-          }
-        ],
-        "outputs" [
-          {
-            "name": "graph_out",
-            "nodetype": "output",
-            "type": "stream",
-            "node": 1,
-            "output": 0
-          },
-        ]
-    }
+      "label": "osc source",
+      "kind": "source",
+      "params": {
+        "data": { "oscillator": { "type": 1, "frequency": 440, "pulseWidth": 0.25 } },
+        "when": 0,
+        "duration": 500
+      }
+    },
+    { "label": "gain", "kind": "gain", "params": { "gain": 0.5 } }
+  ],
+  "connections": [
+    { "from": { "node": 0 }, "to": { "node": 1 } }
+  ],
+  "outputs": [1]
 }
 ```
-</details>
+
+Example — emitter sink (no `outputs[]`)
+
+```json
+{
+  "name": "with-emitter",
+  "nodes": [
+    { "label": "buffer source", "kind": "source", "params": { "data": { "audioData": 0 }, "when": 0, "loop": false } },
+    { "label": "emitter", "kind": "emitter", "params": { "emitterType": "global", "gain": 1 } }
+  ],
+  "connections": [ { "from": { "node": 0 }, "to": { "node": 1 } } ]
+}
+```
+
+### Connections
+
+Connections are declared with `from` and `to` endpoints referencing node indices and optional port indices. See Graph Schema for the normative shape.
+
+
+### Graph Schema (JSON)
+
+This section describes the JSON shape used by KHR_audio_graph for authoring and interchange. It complements the descriptive material above.
+
+Graph object
+
+```json
+{
+  "name": "optional name",
+  "nodes": [ { "kind": "...", "params": { /* node parameters */ }, "label": "optional debug" } ],
+  "connections": [ { "from": { "node": 0, "output": 0 }, "to": { "node": 1, "input": 0 } } ],
+  "outputs": [ 3, 7 ]
+}
+```
+
+- nodes: array of node entries. Each entry uses a discriminator:
+  - kind: one of
+    - source, gain, delay
+    - lowpass, highpass, bandpass, lowshelf, highshelf, peaking, notch, allpass
+    - reverb, waveshaper
+    - splitter, channelmerger, channelmixer, audiomixer
+    - emitter
+  - params: object validated by the corresponding node schema.
+  - label: optional human‑readable string for debugging. Identifiers are not used for connections; array indices are used instead.
+- connections: each describes an edge from an upstream node/output port to a downstream node/input port. The `output`/`input` indices are optional and default to the main port when omitted.
+- outputs: optional array of node indices which feed the global/default destination when no emitters are present (supports non‑spatial/global audio). If emitters are present, they are also valid sinks.
+
+Source node data (ms-based timing)
+
+```json
+{
+  "kind": "source",
+  "params": {
+    "data": { "audioData": 0 },
+    "when": 0, "loop": false, "offset": 0, "duration": 250, "playbackSpeed": 1.0
+  }
+}
+
+{
+  "kind": "source",
+  "params": {
+    "data": { "oscillator": { "type": 1, "frequency": 440, "pulseWidth": 0.25 } },
+    "when": 0, "duration": 500
+  }
+}
+```
+
+- Source is a single 0‑input/1‑output node kind. Its `params.data` is oneOf:
+  - `{ "audioData": <glTFid> }` – refers to an entry in the extension’s `audioData[]` registry
+  - `{ "oscillator": <oscillator parameters> }` – inlined oscillator data
+- Web Audio Mapping: maps to `AudioBufferSourceNode` (or `OscillatorNode` via `PeriodicWave` when `oscillator` is used). Convert timing fields from ms→s when calling `start(when, offset, duration)` and setting `loopStart/loopEnd`.
+
+Spatialization via Emitter
+
+- Spatialization and panning are realized by the Emitter sink combined with the transform of the glTF node the emitter is attached to. No separate panner node is defined.
+- Implementers typically map `spatializationModel` to `panningModel` and attenuation fields to `distanceModel`, `refDistance`, `maxDistance`, `rolloffFactor`, and `cone*`.
+
+Listener
+
+- The Listener is not a graph node. It remains a scene‑level concept attached to the camera (per node extension) and is outside graph connectivity.
+
+### Animation and Pointers (TODO)
+
+- KHR_animation_pointer applicability across Listener, emitters, and node parameters is deferred in this pass. A later revision will specify the accessible properties and JSON Pointer paths. Implementations may experiment, but no normative guidance is provided here yet.
+
+### Emitter Binding to glTF Nodes
+
+- Graph emitters are placement‑agnostic. Binding to scene transforms is done at the glTF node level via a node extension:
+  - Scalar form: `extensions.KHR_audio_graph = { "emitter": <emitterId> }`
+  - Array form: `extensions.KHR_audio_graph = { "emitters": [ <emitterId>, ... ] }`
+- Each glTF node referencing an emitter id creates a distinct emitter instance driven by that node’s transform (translation/rotation/scale). Multiple nodes may reference the same emitter id.
+- Runtime optimization: upstream graph routing is shared; only the final spatial stage (panner + optional post‑panner gain) is instantiated per instance.
+
+Graph rules (normative)
+
+- Graphs are directed acyclic graphs (no cycles).
+- An emitter node has exactly one incoming connection and no outgoing connections.
+- A graph must contain at least one sink (an emitter or a node listed in `outputs`).
+- Multiple sources may reference the same audio data.
+- Fan‑out/fan‑in is allowed subject to node input/output arities (e.g., splitter 1→N, channelmerger N→1, mixers N→1).
+
+The following example shows a minimal graph using the container shape; see `tools/spec-validate/examples/graph.example.json` for a full sample.
 
 ### BYPASS
 
@@ -547,16 +410,18 @@ The node that causes a delay between the arrival of an input data and its propag
 |**extras**|[`any`](#reference-any)|Application-specific data.|No|
 
 
-### 6.3 Pitch shifter node (1 input / 1 output)
+### 6.3 Wave shaper node (1 input / 1 output)
 
-Use the node to make the pitch of an audio deeper or higher.
-
+Use the node to apply waveshaping distortion to an audio signal.
 
 |   |Type|Description|Required|
 |---|---|---|---|
-|**id**|'integer'|A unique identifier of the gain node in the scene.|Yes|
-|**pitch**|'number'|Pitch shift in musical semitones. A value of -12 halves the pitch, while 12 doubles the pitch. A value of 0 will not change the pitch of the audio source.|No|
-|**channelInterpretation**|'string'|Channel ordering for speaker channel interpretation are captured <a href="https://webaudio.github.io/web-audio-api/#ChannelOrdering">here</a>. Expected values are "speakers" or "discrete". When the number of channels do not match any of the basic speaker layouts, use
+|**id**|'integer'|A unique identifier of the node in the scene.|Yes|
+|**amount**|'number'|Distortion intensity in [0..1]. Implementations may map this to a shaping curve (e.g., tanh).|No|
+|**oversample**|'string'|Optional oversampling factor for distortion quality (none, 2x, 4x).|No|
+|**curve**|'array'|Optional explicit shaping curve as a normalized array in [-1..1].|No|
+|**bypass**|`boolean`|Disables this processor while still allowing unprocessed audio signals to pass.|No|
+|**channelInterpretation**|'string'|Channel ordering for speaker channel interpretation are captured <a href="https://webaudio.github.io/web-audio-api/#ChannelOrdering">here</a>. Expected values are "speakers" or "discrete".|No|
 |**extensions**|`object`|JSON object with extension-specific objects.|No|
 |**extras**|[`any`](#reference-any)|Application-specific data.|No|
 
@@ -827,3 +692,44 @@ and the OpenGL ES and OpenGL SC logos are trademarks of Silicon Graphics
 International used under license by Khronos. All other product names, trademarks,
 and/or company names are used solely for identification and belong to their
 respective owners.
+
+---
+
+## Implementation Notes (Non‑normative)
+
+### Conventions: Units & Web Audio Mapping
+- Unless specified otherwise, times are expressed in milliseconds (ms) in this specification. When mapping to the Web Audio API, timing values are converted to seconds (s). Examples:
+  - `delayTime(ms)` → `DelayNode.delayTime(s)`
+  - Source `offset(ms)` / `duration(ms)` → `start(whenSeconds, offsetSeconds, durationSeconds)`
+  - `loopStart(ms)` / `loopEnd(ms)` → `AudioBufferSourceNode.loopStart/loopEnd` (seconds)
+
+### Informal Mapping to Web Audio API
+These notes describe a practical mapping for implementers. They do not change the normative syntax.
+
+- Source (4.1)
+  - Maps to `AudioBufferSourceNode`. `playbackSpeed` → `playbackRate`. Loop points in seconds. `when` uses seconds.
+- Oscillator (4.3)
+  - Maps to `OscillatorNode`. If `type='square'` and `pulseWidth` is provided, a static PWM can be realized via `PeriodicWave`. PWM modulation is out of scope.
+- Gain (6.1)
+  - Maps to `GainNode`. Optional smoothing may be expressed with `interpolation: 'linear'|'custom'` and `duration (ms)`. Linear → linear ramp; custom → approximated via `setTargetAtTime`.
+- Delay (6.2)
+  - Maps to `DelayNode`. Convert `delayTime` from ms to seconds.
+- Filters (6.8.x)
+  - Maps to `BiquadFilterNode` with corresponding `type`. `qualityFactor` → `Q`. `gain` is in dB where applicable.
+- Reverb (6.9)
+  - Realized as IR‑based `ConvolverNode`. Wet/dry ratio implemented by mixing dry and convolved paths with gains. Algorithmic room parameters are out of scope for the IR mapping.
+- Panning
+  - Spatialization is realized by the Emitter sink combined with the glTF node’s transform (position/orientation). Implementations map `spatializationModel` to `panningModel` and attenuation fields to `distanceModel`, `refDistance`, `maxDistance`, `rolloffFactor`, and `cone*` on the underlying engine. No separate panner node is defined in this specification.
+- Channel Split/Merge/Mix (6.4–6.7)
+  - Split: `ChannelSplitterNode`. Merge: `ChannelMergerNode`. Mixer: request up/down‑mix via `channelCountMode='explicit'` and `channelCount`, following Web Audio mixing rules. Audio mixer (N→1) can be realized by summing connections (e.g., a `GainNode` sum).
+
+### Bypass Behavior (Optional)
+- For processors, an optional `bypass: boolean` may be honored by either:
+  1) Build‑time routing: rewire around the node, or
+  2) Runtime wrapper: dry/wet crossfade around the processor.
+- Both approaches are viable; exact behavior is implementation‑defined and may vary by engine.
+
+### Channel Interpretation (Optional)
+- Where supported by Web Audio (`AudioNode.channelInterpretation`), implementations MAY expose `channelInterpretation: 'speakers'|'discrete'` on nodes to refine mixing behavior. Not all runtimes support this property.
+- Graph outputs
+  - Graphs MAY omit emitters and provide an `outputs[]` array listing node indices whose outputs feed the default/global destination. This supports global/non-spatial audio use‑cases without defining a separate panner node.

@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "KHR_audio_graph Audio Source Properties",
     "type": "object",
     "description": "Audio sources reference audio data and define playback properties for it. An audio source node has no inputs and exactly one output, which has the same number of channels as indicated in encoding properties.",
@@ -9,18 +9,24 @@
         }
     ],
     "properties": {
-        "id": {
-            "description": "A unique identifier of the audio source in the scene.",
-            "type": "integer"
-        },
         "data": {
-            "description": "The index of the audio data or oscillator assigned to this clip.",
+            "description": "Audio content for this source: either reference to audioData[] or an inline oscillator.",
             "oneOf": [
                 {
-                    "$ref": "KHR_audio_graph.audiodata.schema.json"
+                    "type": "object",
+                    "properties": {
+                        "audioData": { "allOf": [ { "$ref": "glTFid.schema.json" } ] }
+                    },
+                    "required": ["audioData"],
+                    "additionalProperties": false
                 },
                 {
-                    "$ref": "KHR_audio_graph.oscillator.schema.json"
+                    "type": "object",
+                    "properties": {
+                        "oscillator": { "$ref": "KHR_audio_graph.oscillator.schema.json" }
+                    },
+                    "required": ["oscillator"],
+                    "additionalProperties": false
                 }
             ]
         },
@@ -32,15 +38,17 @@
             "default": 128
         },
         "gain": {
-            "description": "Gain value applied to the audio.",
+            "description": "Gain value applied to the audio (linear [0..1]).",
             "type": "number",
             "minimum": 0.0,
+            "maximum": 1.0,
             "default": 1.0
         },
         "state": {
-            "description": "Playback state: (paused, playing, stopped).",
+            "description": "Playback state.",
             "type": "string",
-            "default": false
+            "enum": ["stopped", "playing", "paused"],
+            "default": "stopped"
         },
         "autoPlay": {
             "description": "Whether or not to play the specified audio when the glTF is loaded.",
@@ -80,7 +88,7 @@
             "default": 0.0
         },
         "when": {
-            "description": "The when parameter describes at what time (in seconds) the sound should start playing.",
+            "description": "The time (in milliseconds) the sound should start playing.",
             "type": "number",
             "minimum": 0.0,
             "default": 0.0
@@ -97,7 +105,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "data"
     ]
 }

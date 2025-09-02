@@ -2,17 +2,14 @@
     "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "KHR_audio_graph Emitter Node",
     "type": "object",
-    "description": "This represents an Emitter properties .",
+    "description": "Emitter node acting as a 1-in/0-out sink; for spatial emitters, 3D properties are provided via spatialProperties.",
     "allOf": [
         {
             "$ref": "glTFProperty.schema.json"
         }
     ],
     "properties": {
-        "id": {
-            "description": "A unique identifier of the emitter in the scene.",
-            "type": "integer"
-        },
+        
         "emitterType": {
             "type": "string",
             "description": "Emitter type (global, spatial).",
@@ -23,7 +20,10 @@
         },
         "gain": {
             "type": "number",
-            "description": "Gain applied to the signal by the emitter. It's a linear value in the range [0, 1]"
+            "description": "Gain applied to the signal by the emitter (linear [0..1]).",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 1
         },
         "spatialProperties": {
             "type": "object",
@@ -34,7 +34,6 @@
         "extras": {}
     },
     "required": [
-        "id",
         "emitterType",
         "gain"
     ],
